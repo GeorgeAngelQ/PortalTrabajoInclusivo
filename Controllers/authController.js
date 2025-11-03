@@ -34,3 +34,26 @@ export const registerController = async (req, res, next) => {
     next(error);
   }
 };
+
+export const loginController = async (req, res) => {
+  const { email, password } = req.body;
+  if(!email || !password){
+    return next("Por favor, complete todos los campos")
+  }
+  const user = await User.findOne({email});
+  if(!user){
+    next("Nombre de usuario inválido")
+  }
+  const isMatch = await user.comparePassword(password)
+  if(!isMatch){
+    return next("Contraseña incorrecta")
+  }
+  const { password: _, ...userData } = user.toObject();
+  const token = user.createJWT();
+  res.status(200).json({
+    success:true,
+    message: "Inicio de sesión exitoso",
+    userData,
+    token
+  })
+}
