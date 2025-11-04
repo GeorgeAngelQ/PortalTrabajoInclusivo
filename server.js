@@ -1,10 +1,14 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
-import testRoutes from './routes/testRoutes.js';
-import authRoutes from './routes/authRoutes.js';
 import morgan from 'morgan';
 import cors from 'cors';
+
+import connectDB from './config/db.js';
+
+import testRoutes from './routes/testRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+
 import errorMiddleware from './Middlewares/errorMiddleware.js';
 
 dotenv.config();
@@ -23,4 +27,5 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use("/api/v1/test", testRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/user", userRoutes);
 app.use(errorMiddleware);
