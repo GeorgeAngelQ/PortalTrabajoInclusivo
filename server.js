@@ -3,6 +3,9 @@ import dotenv from 'dotenv';
 import morgan from 'morgan';
 import cors from 'cors';
 
+import helmet from 'helmet';
+import xss from 'xss-clean';
+import MongoSanitize from 'express-mongo-sanitize';
 import connectDB from './config/db.js';
 
 import testRoutes from './routes/testRoutes.js';
@@ -22,7 +25,9 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
+app.use(helmet(``));
+app.use(xss());
+app.use(MongoSanitize())
 app.use(express.json());
 app.use(cors());
 app.use(morgan('dev'));
