@@ -13,34 +13,34 @@ export const CreateJobController = async (req, res, next) => {
 };
 
 export const GetAllJobsController = async (req, res, next) => {
-    const { status, jobType, search, sort } = req.query;
-    let queryObject = {
-        createdBy: req.user.userId,
-    };
-    if(status && status !== "all"){
-        queryObject.status = status;
-    }
-    if(jobType && jobType !== "all"){
-        queryObject.jobType = jobType;
-    }
-    if(search){
-        queryObject.position = {$regex: search, $options: "i"};
-    }
-    if(sort === "latest"){
-        queryObject = Job.find(queryObject).sort("-createdAt");
-    }
-    if(sort === "oldest"){
-        queryObject = Job.find(queryObject).sort("createdAt");
-    }
-    if(sort === "a-z"){
-        queryObject = Job.find(queryObject).sort("position");
-    }
-    if(sort === "z-a"){
-        queryObject = Job.find(queryObject).sort("-position");
-    }
-    const queryResult = Job.find(queryObject);
-    const jobs = await queryResult;
-  res.status(200).json({ TotalJobs: jobs.length, jobs });
+  const { status, jobType, search, sort } = req.query;
+  let queryObject = {
+    createdBy: req.user.userId,
+  };
+  if (status && status !== "all") queryObject.status = status;
+  if (jobType && jobType !== "all") queryObject.jobType = jobType;
+  if (search) queryObject.position = { $regex: search, $options: "i" };
+
+  let result = Job.find(queryObject);
+
+  if (sort === "latest") result = result.sort("-createdAt");
+  else if (sort === "oldest") result = result.sort("createdAt");
+  else if (sort === "a-z") result = result.sort("position");
+  else if (sort === "z-a") result = result.sort("-position");
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  result = result.skip(skip).limit(limit);
+
+  const jobs = await result;
+  const totalJobs = await Job.countDocuments(queryObject);
+  const numOfPages = Math.ceil(totalJobs / limit);
+
+  res
+    .status(200)
+    .json({ success: true, totalJobs, numOfPages, currentPage: page, jobs });
 };
 
 export const UpdateJobController = async (req, res, next) => {
