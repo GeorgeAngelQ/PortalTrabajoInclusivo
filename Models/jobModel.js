@@ -1,42 +1,69 @@
 import mongoose from "mongoose";
 
+const accesibilitySchema = new mongoose.Schema({
+  remote: { type: Boolean, default: false },
+  physicalAdaptation: { type: Boolean, default: false },
+  languageInterpreter: { type: Boolean, default: false },
+});
+
 const jobSchema = new mongoose.Schema(
   {
-    position: {
-      type: String,
-      required: [true, "El puesto es obligatorio"],
-      maxlength: [100, "El puesto no puede tener más de 100 caracteres"],
+    enterpriseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "El ID de la empresa es obligatorio"],
     },
-    company: {
+    title: {
       type: String,
-      required: [true, "La empresa es obligatoria"],
-      maxlength: [
-        100,
-        "El nombre de la empresa no puede tener más de 100 caracteres",
-      ],
+      required: [true, "El título del puesto es obligatorio"],
+      maxlength: [120, "El título no puede tener más de 120 caracteres"],
+      trim: true,
     },
-    jobLocation: {
+    description: {
       type: String,
-      default: "Lima-Sur",
-      enum: ["Santiago de Surco", "Chorrillos", "San Juan de Miraflores", "Villa el Salvador"],
-      required: true,
+      required: [true, "La descripción del puesto es obligatoria"],
+      minlength: [20, "Debe incluir al menos 20 caracteres"],
+      trim: true,
     },
-    jobType: {
+    requisites: {
+      type: [String],
+      default: [],
+    },
+    contractType: {
       type: String,
-      enum: ["Tiempo completo", "Medio tiempo", "Remoto", "Presencial"],
+      enum: ["Tiempo completo", "Medio tiempo", "Prácticas", "Temporal"],
       default: "Tiempo completo",
+    },
+    location: {
+      type: String,
+      enum: [
+        "Lima Norte",
+        "Lima Sur",
+        "Lima Este",
+        "Lima Centro",
+        "Callao",
+        "Remoto",
+      ],
+      default: "Lima Sur",
+    },
+    accesibility: accesibilitySchema,
+    publishDate: {
+      type: Date,
+      default: Date.now,
     },
     status: {
       type: String,
-      enum: ["Pendiente", "En progreso", "Completado"],
-      default: "Pendiente",
+      enum: ["activa", "pausada", "cerrada"],
+      default: "activa",
     },
-    createdBy: {
-      type: mongoose.Types.ObjectId,
-      ref: "User"    },
+    categoriaId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
+    },
   },
   { timestamps: true }
 );
+
 const Job = mongoose.model("Job", jobSchema);
 
 export default Job;
