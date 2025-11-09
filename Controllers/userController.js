@@ -1,19 +1,56 @@
 import User from "../Models/userModel.js";
 
-export const updateUserController = async (req, res, next) => {
-    const { name, email, lastname, location } = req.body;
-    if(!name || !lastname || !email || !location){
-        return next("Todos los campos son obligatorios")
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user)
+      return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener perfil", error });
+  }
+};
+
+export const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user)
+      return res.status(404).json({ message: "Usuario no encontrado" });
+
+    user.name = req.body.name || user.name;
+    user.lastname = req.body.lastname || user.lastname;
+    user.location = req.body.location || user.location;
+    if (req.body.profile) {
+      user.profile = {
+        ...user.profile, 
+        ...req.body.profile,
+      };
     }
-    const user = await User.findOne({_id: req.user.userId});
-    user.name = name;
-    user.lastname = lastname;
-    user.email = email;
-    user.location = location;
-    await user.save();
-    const token = user.createJWT();
-    res.status(200).json({
-        user,
-        token
-    })    
-}
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      message: "Perfil actualizado correctamente",
+      user: updatedUser
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar perfil", error });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.user.id);
+    if (!user)
+      return res.status(404).json({ message: "Usuario no encontrado" });
+
+    res.json({ message: "Usuario eliminado correctamente" });
+  } catch (error) {
+    res.status(500).json({ message: "Error al eliminar usuario", error });
+  }
+};

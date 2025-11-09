@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     },
     lastname: {
       type: String,
-      required: [true, "El apellido es obligatorio"],
+      required: function() { return this.userType === 'usuario'; },
       trim: true,
     },
     email: {

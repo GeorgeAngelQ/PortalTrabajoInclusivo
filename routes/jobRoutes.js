@@ -1,20 +1,22 @@
 import express from "express";
-import userAuth from "../Middlewares/authMiddleware.js";
 import {
-  CreateJobController,
-  GetAllJobsController,
-  UpdateJobController,
-  DeleteJobController,
-  JobStatsController,
+  getJobs,
+  getJobById,
+  createJob,
+  updateJob,
+  deleteJob
 } from "../Controllers/jobController.js";
-import Job from "../Models/jobModel.js";
+import { protect, authorizeRoles } from "../Middlewares/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/create-job", userAuth, CreateJobController);
-router.get("/get-jobs", userAuth, GetAllJobsController);
-router.patch("/update-job/:id", userAuth, UpdateJobController);
-router.delete("/delete-job/:id", userAuth, DeleteJobController);
-router.get("/job-stats", userAuth, JobStatsController);
+
+router.get("/", protect, getJobs);
+
+router.get("/:id", protect, getJobById);
+
+router.post("/", protect, authorizeRoles("empresa"), createJob);
+router.put("/:id", protect, authorizeRoles("empresa"), updateJob);
+router.delete("/:id", protect, authorizeRoles("empresa"), deleteJob);
 
 export default router;

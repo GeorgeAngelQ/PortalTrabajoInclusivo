@@ -1,132 +1,136 @@
-import moment from "moment";
 import Job from "../Models/jobModel.js";
-import mongoose from "mongoose";
+import Enterprise from "../Models/enterpriseModel.js";
 
-export const CreateJobController = async (req, res, next) => {
-  const { company, position, jobLocation } = req.body;
-  if (!company || !position || !jobLocation) {
-    return next("Por favor, complete todos los campos obligatorios");
-  }
-  req.body.createdBy = req.user.userId;
-  const job = await Job.create(req.body);
-  res.status(201).json({ job });
-};
-
-export const GetAllJobsController = async (req, res, next) => {
-  const { status, jobType, search, sort } = req.query;
-  let queryObject = {
-    createdBy: req.user.userId,
-  };
-  if (status && status !== "all") queryObject.status = status;
-  if (jobType && jobType !== "all") queryObject.jobType = jobType;
-  if (search) queryObject.position = { $regex: search, $options: "i" };
-
-  let result = Job.find(queryObject);
-
-  if (sort === "latest") result = result.sort("-createdAt");
-  else if (sort === "oldest") result = result.sort("createdAt");
-  else if (sort === "a-z") result = result.sort("position");
-  else if (sort === "z-a") result = result.sort("-position");
-
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
-
-  result = result.skip(skip).limit(limit);
-
-  const jobs = await result;
-  const totalJobs = await Job.countDocuments(queryObject);
-  const numOfPages = Math.ceil(totalJobs / limit);
-
-  res
-    .status(200)
-    .json({ success: true, totalJobs, numOfPages, currentPage: page, jobs });
-};
-
-export const UpdateJobController = async (req, res, next) => {
-  const { id: jobId } = req.params;
-  const { company, position, jobLocation } = req.body;
-  if (!company || !position || !jobLocation) {
-    return next("Por favor, complete todos los campos obligatorios");
-  }
-  const job = await Job.findOne({ _id: jobId });
-  if (!job) {
-    return next(`No se encontró el trabajo con id: ${jobId}`);
-  }
-  if (job.createdBy.toString() !== req.user.userId) {
-    return next("No está autorizado para actualizar este trabajo");
-  }
-  const updatedJob = await Job.findOneAndUpdate({ _id: jobId }, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  res.status(200).json({ updatedJob });
-};
-
-export const DeleteJobController = async (req, res, next) => {
-  const { id: jobId } = req.params;
-  const job = await Job.findOne({ _id: jobId });
-  if (!job) {
-    return next(`No se encontró el trabajo con id: ${jobId}`);
-  }
-  if (job.createdBy.toString() !== req.user.userId) {
-    return next("No está autorizado para eliminar este trabajo");
-  }
-  await Job.findOneAndDelete({ _id: jobId });
-  res.status(200).json({ msg: "Trabajo eliminado correctamente" });
-};
-
-export const JobStatsController = async (req, res, next) => {
+export const createJob = async (req, res) => {
   try {
-    const userObjectId = new mongoose.Types.ObjectId(req.user.userId);
+    const { title, description, requisites, contractType, location, accesibility, categoriaId } = req.body;
 
-    const stats = await Job.aggregate([
-      { $match: { createdBy: userObjectId } },
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]);
+    if (!title || !description) {
+      return res.status(400).json({ message: "Título y descripción son obligatorios" });
+    }
+    if (req.user.role !== "empresa" && req.user.role !== "admin") {
+      return res.status(403).json({ message: "No autorizado para crear ofertas laborales" });
+    }
 
-    const defaultStats = {
-      Pendiente: stats.find((item) => item._id === "Pendiente")?.count || 0,
-      "En progreso":
-        stats.find((item) => item._id === "En progreso")?.count || 0,
-      Completado: stats.find((item) => item._id === "Completado")?.count || 0,
-    };
+    const newJob = new Job({
+      enterpriseId: req.user.id, 
+      title,
+      description,
+      requisites,
+      contractType,
+      location,
+      accesibility,
+      categoriaId,
+    });
 
-    let monthlyApplications = await Job.aggregate([
-      { $match: { createdBy: userObjectId } },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { "_id.year": -1, "_id.month": -1 } },
-      { $limit: 6 },
-    ]);
-    monthlyApplications = monthlyApplications
-      .map((item) => {
-        const {
-          _id: { year, month },
-          count,
-        } = item;
-        const date = moment()
-          .month(month - 1)
-          .year(year)
-          .format("MMM YYYY");
-        return { date, count };
-      })
-      .reverse();
+    await newJob.save();
 
-    res.status(200).json({
-      success: true,
-      defaultStats: defaultStats,
-      stats: stats,
-      monthlyApplications: monthlyApplications,
+    res.status(201).json({
+      message: "Oferta laboral creada exitosamente",
+      job: newJob,
     });
   } catch (error) {
-    next(error);
+    console.error("❌ Error al crear oferta:", error);
+    res.status(500).json({ message: "Error interno al crear oferta" });
+  }
+};
+
+export const getJobs = async (req, res) => {
+  try {
+    let filter = {};
+
+    if (req.user.role === "empresa") {
+      filter = { enterpriseId: req.user.id };
+    } else if (req.user.role === "usuario") {
+      filter = { status: "activa" };
+    }
+
+    const jobs = await Job.find(filter)
+      .populate("enterpriseId", "name email")
+      .populate("categoriaId", "name")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(jobs);
+  } catch (error) {
+    console.error("❌ Error al listar ofertas:", error);
+    res.status(500).json({ message: "Error interno al listar ofertas" });
+  }
+};
+
+export const getJobById = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id)
+      .populate("enterpriseId", "name email")
+      .populate("categoriaId", "name");
+
+    if (!job) {
+      return res.status(404).json({ message: "Oferta no encontrada" });
+    }
+
+    res.status(200).json(job);
+  } catch (error) {
+    console.error("❌ Error al obtener oferta:", error);
+    res.status(500).json({ message: "Error interno al obtener oferta" });
+  }
+};
+
+
+export const updateJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(404).json({ message: "Oferta no encontrada" });
+    }
+
+    if (job.enterpriseId.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "No autorizado para editar esta oferta" });
+    }
+
+    const fields = [
+      "title",
+      "description",
+      "requisites",
+      "contractType",
+      "location",
+      "accesibility",
+      "status",
+      "categoriaId",
+    ];
+
+    fields.forEach((field) => {
+      if (req.body[field] !== undefined) job[field] = req.body[field];
+    });
+
+    await job.save();
+
+    res.status(200).json({
+      message: "Oferta actualizada correctamente",
+      job,
+    });
+  } catch (error) {
+    console.error("❌ Error al actualizar oferta:", error);
+    res.status(500).json({ message: "Error interno al actualizar oferta" });
+  }
+};
+
+export const deleteJob = async (req, res) => {
+  try {
+    const job = await Job.findById(req.params.id);
+
+    if (!job) {
+      return res.status(404).json({ message: "Oferta no encontrada" });
+    }
+
+    if (job.enterpriseId.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "No autorizado para eliminar esta oferta" });
+    }
+
+    await job.deleteOne();
+
+    res.status(200).json({ message: "Oferta eliminada correctamente" });
+  } catch (error) {
+    console.error("❌ Error al eliminar oferta:", error);
+    res.status(500).json({ message: "Error interno al eliminar oferta" });
   }
 };
