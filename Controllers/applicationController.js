@@ -22,7 +22,9 @@ export const createApplication = async (req, res) => {
       userId,
       message,
     });
-    
+
+    await Job.findByIdAndUpdate(jobId, { $inc: { applicantsCount: 1 } });
+
     res.status(201).json({
       message: "Postulación enviada correctamente",
       application: newApplication,
@@ -38,7 +40,7 @@ export const getUserApplications = async (req, res) => {
     const applications = await Application.find({ userId: req.user.id })
       .populate({
         path: "jobId",
-        select: "title location contractType status",
+        select: "title location contractType status enterpriseName",
       })
       .sort({ createdAt: -1 });
 
@@ -63,7 +65,7 @@ export const getJobApplications = async (req, res) => {
     }
 
     const applications = await Application.find({ jobId })
-      .populate("userId", "name lastname email profile.location profile.discapacity")
+      .populate("userId", "name lastname email profile.phone profile.location profile.summary profile.skills")
       .sort({ createdAt: -1 });
 
     res.status(200).json(applications);
@@ -120,7 +122,7 @@ export const deleteApplication = async (req, res) => {
     ) {
       return res.status(403).json({ message: "No autorizado para eliminar esta postulación" });
     }
-
+    await Job.findByIdAndUpdate(application.jobId, { $inc: { applicantsCount: -1 } });
     await application.deleteOne();
 
     res.status(200).json({ message: "Postulación eliminada correctamente" });

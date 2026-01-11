@@ -14,19 +14,30 @@ export const getUserProfile = async (req, res) => {
 
 export const updateUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user)
+    const user = await User.findById(req.user.id).select("+password");
+    if (!user) {
       return res.status(404).json({ message: "Usuario no encontrado" });
+    }
 
-    user.name = req.body.name || user.name;
-    user.lastname = req.body.lastname || user.lastname;
-    user.location = req.body.location || user.location;
+    user.name = req.body.name ?? user.name;
+    user.lastname = req.body.lastname ?? user.lastname;
+    user.email = req.body.email ?? user.email;
+
     if (req.body.profile) {
       user.profile = {
-        ...user.profile, 
-        ...req.body.profile,
+        ...user.profile.toObject(), 
+        ...req.body.profile,        
       };
     }
+
+    if (req.body.profile?.experience) {
+      user.profile.experience = req.body.profile.experience; 
+    }
+
+    if (req.body.profile?.education) {
+      user.profile.education = req.body.profile.education; 
+    }
+
     if (req.body.password) {
       const salt = await bcrypt.genSalt(10);
       user.password = await bcrypt.hash(req.body.password, salt);
@@ -36,12 +47,14 @@ export const updateUserProfile = async (req, res) => {
 
     res.json({
       message: "Perfil actualizado correctamente",
-      user: updatedUser
+      user: updatedUser,
     });
+
   } catch (error) {
     res.status(500).json({ message: "Error al actualizar perfil", error });
   }
 };
+
 
 export const deleteUser = async (req, res) => {
   try {

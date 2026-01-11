@@ -1,37 +1,111 @@
 import Job from "../Models/jobModel.js";
+import {
+  contractType,
+  location,
+  status,
+  modality,
+  educationLevel
+} from "../Models/jobModel.js";
 import Enterprise from "../Models/enterpriseModel.js";
 
 export const createJob = async (req, res) => {
   try {
-    const { title, description, requisites, contractType, location, accesibility, categoriaId } = req.body;
+    const userId = req.user.id;
 
-    if (!title || !description) {
-      return res.status(400).json({ message: "Título y descripción son obligatorios" });
-    }
-    if (req.user.role !== "empresa" && req.user.role !== "admin") {
-      return res.status(403).json({ message: "No autorizado para crear ofertas laborales" });
+    const enterprise = await Enterprise.findOne({ userId });
+
+    if (!enterprise) {
+      return res.status(404).json({
+        ok: false,
+        message: "No se encontró la empresa asociada al usuario.",
+      });
     }
 
-    const newJob = new Job({
-      enterpriseId: req.user.id, 
+    let {
       title,
       description,
       requisites,
       contractType,
       location,
       accesibility,
+      salaryMin,
+      salaryMax,
+      modality,
+      skills,
+      benefits,
+      deadline,
+      tags,
+      category,
       categoriaId,
+      experienceMin,
+      educationLevel
+    } = req.body;
+
+    requisites = requisites || [];
+    skills = skills || [];
+    benefits = benefits || [];
+    tags = tags || [];
+
+    accesibility = {
+      remote: accesibility?.remote || false,
+      physicalAdaptation: accesibility?.physicalAdaptation || false,
+      languageInterpreter: accesibility?.languageInterpreter || false,
+    };
+
+    if (!title || !description) {
+      return res.status(400).json({
+        ok: false,
+        message: "El título y la descripción son obligatorios.",
+      });
+    }
+
+    if (salaryMin && salaryMax && salaryMin > salaryMax) {
+      return res.status(400).json({
+        ok: false,
+        message: "El salario mínimo no puede ser mayor al salario máximo.",
+      });
+    }
+
+    const newJob = new Job({
+      enterpriseId: userId,
+      title,
+      description,
+      requisites,
+      contractType,
+      location,
+      accesibility,
+      salaryMin,
+      salaryMax,
+      modality,
+      skills,
+      benefits,
+      deadline,
+      tags,
+      category,
+      categoriaId,
+      experienceMin,
+      educationLevel,
+
+      enterpriseName: enterprise.companyName,
+      enterpriseLogo: enterprise.logoURL,
+      industry: enterprise.sector,
     });
 
     await newJob.save();
 
-    res.status(201).json({
-      message: "Oferta laboral creada exitosamente",
+    return res.status(201).json({
+      ok: true,
+      message: "Oferta laboral creada correctamente.",
       job: newJob,
     });
   } catch (error) {
-    console.error("❌ Error al crear oferta:", error);
-    res.status(500).json({ message: "Error interno al crear oferta" });
+    console.error("❌ Error en createJob:", error);
+
+    return res.status(500).json({
+      ok: false,
+      message: "Ocurrió un error al crear la oferta laboral.",
+      error: error.message,
+    });
   }
 };
 
@@ -132,5 +206,56 @@ export const deleteJob = async (req, res) => {
   } catch (error) {
     console.error("❌ Error al eliminar oferta:", error);
     res.status(500).json({ message: "Error interno al eliminar oferta" });
+  }
+};
+export const getJobEnums = (req, res) => {
+  try {
+    res.status(200).json({
+      contractType,
+      location,
+      status,
+      modality,
+      educationLevel,
+    });
+  } catch (error) {
+    console.error("❌ Error al obtener enums de oferta:", error);
+    res.status(500).json({ message: "Error interno al obtener enums de oferta" });
+  }
+}
+export const updateJobStatus = async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ 
+        message: "El estado es requerido (activo, pausado, cerrado)" 
+      });
+    }
+
+    const validStatuses = ["activo", "pausado", "cerrado", "activa"];
+
+    if (!validStatuses.includes(status.toLowerCase())) {
+      return res.status(400).json({
+        message: `Estado inválido. Estados permitidos: ${validStatuses.join(", ")}`
+      });
+    }
+
+    const job = await Job.findById(jobId);
+
+    if (!job) {
+      return res.status(404).json({ message: "Oferta no encontrada" });
+    }
+
+    job.status = status; 
+    await job.save();
+    
+    return res.status(200).json({
+      message: "Estado de la oferta actualizado correctamente",
+      job,
+    });
+  } catch (error) {
+    console.error("❌ Error al actualizar estado:", error);
+    res.status(500).json({ message: "Error interno al cambiar estado de la oferta" });
   }
 };

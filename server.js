@@ -11,6 +11,8 @@ import userRoutes from './routes/userRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import enterpriseRoutes from './routes/enterpriseRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
+import categoryRoutes from './routes/categoryRoutes.js';
 import errorMiddleware from './Middlewares/errorMiddleware.js';
 
 dotenv.config();
@@ -31,7 +33,9 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/job", jobRoutes);
 app.use("/api/v1/enterprise", enterpriseRoutes);
+app.use("/api/v1/category", categoryRoutes);
 app.use("/api/v1/application", applicationRoutes);
+app.use("/api/v1/search", searchRoutes);
 app.use(errorMiddleware);
 
 

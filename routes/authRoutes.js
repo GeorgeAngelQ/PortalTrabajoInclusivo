@@ -3,6 +3,7 @@ import {
   registerUser,
   loginController,
   registerEnterprise,
+  logoutController
 } from "../Controllers/authController.js";
 import rateLimit from "express-rate-limit";
 
@@ -18,5 +19,6 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/register-enterprise", registerEnterprise);
 router.post("/login", loginController);
+router.post("/logout", logoutController);
 
 export default router;

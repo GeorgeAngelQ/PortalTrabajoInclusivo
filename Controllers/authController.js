@@ -124,3 +124,17 @@ export const loginController = async (req, res) => {
     token,
   });
 };
+
+export const logoutController = async (req, res) => {
+  try {
+    res.clearCookie("token");
+
+    return res.status(200).json({
+      success: true,
+      message: "Sesión cerrada correctamente",
+    });
+  } catch (error) {
+    console.error("❌ Error al cerrar sesión:", error);
+    res.status(500).json({ message: "Error interno al cerrar sesión" });
+  }
+};

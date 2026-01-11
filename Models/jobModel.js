@@ -31,20 +31,63 @@ const jobSchema = new mongoose.Schema(
     },
     contractType: {
       type: String,
-      enum: ["Tiempo completo", "Medio tiempo", "Prácticas", "Temporal"],
+      enum: [
+        "Tiempo completo",
+        "Medio tiempo",
+        "Prácticas",
+        "Temporal",
+        "Freelance",
+      ],
       default: "Tiempo completo",
     },
     location: {
       type: String,
       enum: [
-        "Lima Norte",
-        "Lima Sur",
-        "Lima Este",
-        "Lima Centro",
-        "Callao",
-        "Remoto",
+        "Ancon",
+        "Ate",
+        "Barranco",
+        "Breña",
+        "Carabayllo",
+        "Chaclacayo",
+        "Chorrillos",
+        "Cieneguilla",
+        "Comas",
+        "El Agustino",
+        "Independencia",
+        "Jesús María",
+        "La Molina",
+        "La Victoria",
+        "Lima",
+        "Lince",
+        "Los Olivos",
+        "Lurigancho",
+        "Lurín",
+        "Magdalena del Mar",
+        "Miraflores",
+        "Pachacamac",
+        "Pucusana",
+        "Pueblo Libre",
+        "Puente Piedra",
+        "Punta Hermosa",
+        "Punta Negra",
+        "Rimac",
+        "San Bartolo",
+        "San Borja",
+        "San Isidro",
+        "San Juan de Lurigancho",
+        "San Juan de Miraflores",
+        "San Luis",
+        "San Martín de Porres",
+        "San Miguel",
+        "Santa Anita",
+        "Santa María del Mar",
+        "Santa Rosa",
+        "Santiago de Surco",
+        "Surquillo",
+        "Villa El Salvador",
+        "Villa María del Triunfo",
       ],
-      default: "Lima Sur",
+      default: "Lima",
     },
     accesibility: accesibilitySchema,
     publishDate: {
@@ -53,8 +96,35 @@ const jobSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["activa", "pausada", "cerrada"],
-      default: "activa",
+      enum: ["Activo", "Pausado", "Cerrado"],
+      default: "Activo",
+    },
+    salaryMin: { type: Number },
+    salaryMax: { type: Number },
+    modality: {
+      type: String,
+      enum: ["Presencial", "Híbrido", "Remoto"],
+      default: "Presencial",
+    },
+    enterpriseName: { type: String, trim: true },
+    enterpriseLogo: { type: String, trim: true },
+    industry: { type: String, trim: true },
+
+    skills: { type: [String], default: [] },
+    benefits: { type: [String], default: [] },
+
+    deadline: { type: Date },
+
+    isHighlighted: { type: Boolean, default: false },
+    views: { type: Number, default: 0 },
+    applicantsCount: { type: Number, default: 0 },
+
+    tags: { type: [String], default: [] },
+    category: { type: String, trim: true },
+    experienceMin: { type: Number, default: 0 },
+    educationLevel: {
+      type: String,
+      enum: ["Secundaria", "Técnico", "Universitario", "Titulado", "Maestría"],
     },
     categoriaId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -65,5 +135,11 @@ const jobSchema = new mongoose.Schema(
 );
 
 const Job = mongoose.model("Job", jobSchema);
+export const contractType = Job.schema.path("contractType").enumValues;
+export const location = Job.schema.path("location").enumValues;
+export const status = Job.schema.path("status").enumValues;
+export const modality = Job.schema.path("modality").enumValues;
+export const educationLevel = Job.schema.path("educationLevel").enumValues;
+
 
 export default Job;

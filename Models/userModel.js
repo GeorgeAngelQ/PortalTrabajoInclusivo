@@ -3,11 +3,35 @@ import validator from "validator";
 import bcrypt from "bcrypt";
 import JWT from "jsonwebtoken";
 
+
+const experienceSchema = new mongoose.Schema({
+  position: { type: String, trim: true },
+  enterprise: { type: String, trim: true },
+  inite: { type: String, trim: true }, 
+  end: { type: String, trim: true },    
+  description: { type: String, trim: true }
+});
+
+const educationSchema = new mongoose.Schema({
+  grado: { type: String, trim: true },
+  institucion: { type: String, trim: true },
+  anio: { type: String, trim: true },
+  descripcion: { type: String, trim: true }
+});
+
+
 const profileSchema = new mongoose.Schema({
-  habilities: [{ type: String, trim: true }],
+  phone: { type: String, trim: true },
+  location: { type: String, trim: true, default: "Lima" },
+  title: { type: String, trim: true }, 
+  summary: { type: String, trim: true }, 
+  skills: [{ type: String, trim: true }],
+
+  experience: [experienceSchema],
+  education: [educationSchema],
+
   discapacity: { type: String, trim: true },
-  location: { type: String, default: "Perú", trim: true },
-  curriculumURL: { type: String, trim: true },
+  curriculumURL: { type: String, trim: true }
 });
 
 const userSchema = new mongoose.Schema(
@@ -63,7 +87,7 @@ userSchema.methods.createJWT = function () {
       email: this.email,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" }
+    { expiresIn: "4h" }
   );
 };
 
